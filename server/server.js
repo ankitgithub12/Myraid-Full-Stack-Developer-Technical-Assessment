@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const dotenv = require('dotenv');
+const fs = require('fs'); // Add this import
 
 dotenv.config(); // Must be called before any routes or models that rely on process.env
 
@@ -67,30 +68,65 @@ app.use('/api/users', userRoutes);
 
 // ─── Static Files & SPA Routing (Production) ──────────────────────────────────
 if (process.env.NODE_ENV === 'production') {
-  const buildPath = path.join(__dirname, '../client/dist');
-  
-  // Serve static files (js, css, images) from the build folder
-  app.use(express.static(buildPath));
+  // Try multiple possible build paths
+  const possiblePaths = [
+    path.join(__dirname, '../client/dist'),           // server/client/dist
+    path.join(__dirname, '../../client/dist'),        // project/src/server/../../client/dist
+    path.join(__dirname, '../public'),                // fallback to public
+    path.join(process.cwd(), 'client/dist'),          // from current working directory
+    path.join(process.cwd(), '../client/dist'),       // from one level up
+  ];
 
-  // Option 1: Use a middleware function instead of a route pattern
-  // This will catch all requests that aren't handled by previous routes
-  app.use((req, res, next) => {
-    // Skip API routes - they should have been handled already
-    if (req.path.startsWith('/api/')) {
-      return next(); // This will eventually hit the 404 handler
+  // Find the first existing build path
+  let buildPath = null;
+  for (const testPath of possiblePaths) {
+    const indexPath = path.join(testPath, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      buildPath = testPath;
+      console.log(`[Static] Found build at: ${buildPath}`);
+      break;
     }
+  }
+
+  if (buildPath) {
+    // Serve static files from the found build path
+    app.use(express.static(buildPath));
+
+    // For SPA routing: serve index.html for any non-API routes
+    app.use((req, res, next) => {
+      // Skip API routes
+      if (req.path.startsWith('/api/')) {
+        return next();
+      }
+      
+      // Serve index.html for all other routes
+      res.sendFile(path.join(buildPath, 'index.html'), (err) => {
+        if (err) {
+          console.error(`[Static] Error sending file: ${err.message}`);
+          next(err);
+        }
+      });
+    });
+  } else {
+    console.error('[Static] Could not find client build files in any of these locations:');
+    possiblePaths.forEach(p => console.error(`  - ${p}`));
     
-    // Check if the request accepts HTML (browser navigation)
-    const acceptsHtml = req.accepts('html');
-    
-    if (acceptsHtml) {
-      // Serve the React app for browser navigation
-      res.sendFile(path.resolve(buildPath, 'index.html'));
-    } else {
-      // For API-like requests that weren't caught, pass to 404 handler
-      next();
-    }
-  });
+    // Fallback: just return a simple message
+    app.get('*', (req, res) => {
+      if (!req.path.startsWith('/api/')) {
+        res.status(200).send(`
+          <html>
+            <head><title>Task Manager API</title></head>
+            <body>
+              <h1>Task Manager API is running</h1>
+              <p>The frontend build files are not available. API endpoints are working.</p>
+              <p>Build path not found. Please check your deployment configuration.</p>
+            </body>
+          </html>
+        `);
+      }
+    });
+  }
 } else {
   app.get('/', (req, res) => {
     res.send('Task Manager API is running in development mode...');
