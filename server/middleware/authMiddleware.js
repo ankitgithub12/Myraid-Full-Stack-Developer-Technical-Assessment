@@ -18,8 +18,13 @@ const protect = asyncHandler(async (req, res, next) => {
       }
       next();
     } catch (error) {
-      res.status(401);
-      throw new Error('Not authorized, token failed');
+      console.error('Auth Middleware Error:', error.message);
+      if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+        res.status(401);
+        throw new Error('Not authorized, token failed');
+      }
+      res.status(500);
+      throw new Error('Server error during authentication');
     }
   } else {
     res.status(401);

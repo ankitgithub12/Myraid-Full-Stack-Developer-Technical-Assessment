@@ -42,20 +42,27 @@ const registerUser = asyncHandler(async (req, res) => {
 // @access  Public
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
+  console.log('Login attempt:', { email, passwordInputLength: password?.length });
 
   const user = await User.findOne({ email });
+  console.log('User found:', user ? user.email : null);
 
-  if (user && (await user.matchPassword(password))) {
-    generateToken(res, user._id);
-    res.json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-    });
-  } else {
-    res.status(401);
-    throw new Error('Invalid email or password');
+  if (user) {
+    const isMatch = await user.matchPassword(password);
+    console.log('Password match:', isMatch);
+    if (isMatch) {
+      generateToken(res, user._id);
+      return res.json({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+      });
+    }
   }
+  
+  console.log('Login failed: Invalid email or password');
+  res.status(401);
+  throw new Error('Invalid email or password');
 });
 
 // @desc    Logout user / clear cookie
