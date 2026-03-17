@@ -4,8 +4,10 @@ A full-stack Task Management application featuring user authentication, protecte
 
 ## 🔗 Project Links
 
-- **Frontend Directory**: [`./client`](./client)
-- **Backend Directory**: [`./server`](./server)
+- **Live Application**: [myraid-full-stack-developer-technical.onrender.com](https://myraid-full-stack-developer-technical.onrender.com)
+- **Backend API**: [myraid-server.onrender.com/api](https://myraid-server.onrender.com/api)
+- **Frontend Source**: [`./client`](./client)
+- **Backend Source**: [`./server`](./server)
 
 ## 🏗️ Architecture Explanation
 
@@ -90,13 +92,14 @@ Follow these instructions to run the application locally.
 
 ## 📸 Screenshots
 
-*Please add your images to the `screenshots` folder and match the filenames below.*
-
 - **Login Screen**
   ![Login Screen](./screenshots/login.png)
 
-- **Dashboard / Task Manager**
-  ![Dashboard](./screenshots/dashboard.png)
+- **Registration Screen**
+  ![Registration Screen](./screenshots/signup.png)
 
-- **Register / Profile view**
-  ![Profile View](./screenshots/profile.png)
+- **Dashboard / Task Manager**
+  ![Dashboard](./screenshots/Dashboard.png)
+
+- **User Settings**
+  ![User Settings](./screenshots/settings.png)
