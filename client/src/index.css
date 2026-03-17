@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+:root {
+  --color-primary-50: #f0f9ff;
+  --color-primary-100: #e0f2fe;
+  --color-primary-400: #38bdf8;
+  --color-primary-500: #0ea5e9;
+  --color-primary-600: #0284c7;
+  --color-primary-700: #0369a1;
+  --color-bg-deep: #020617;
+  --glass-bg: rgba(15, 23, 42, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-bg-deep);
+  color: #f8fafc;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Animated Aurora Background */
+.aurora-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-color: #030712;
+  overflow: hidden;
+}
+
+.aurora-bg::before,
+.aurora-bg::after {
+  content: '';
+  position: absolute;
+  width: 150vw;
+  height: 150vh;
+  top: -25%;
+  left: -25%;
+  background: radial-gradient(circle at 50% 50%, rgba(124, 58, 237, 0.12) 0%, transparent 60%),
+              radial-gradient(circle at 80% 20%, rgba(6, 182, 212, 0.12) 0%, transparent 50%),
+              radial-gradient(circle at 20% 80%, rgba(236, 72, 153, 0.12) 0%, transparent 50%);
+  filter: blur(100px);
+  animation: auroraMove 30s ease-in-out infinite alternate;
+  z-index: -1;
+}
+
+.aurora-bg::after {
+  animation-duration: 40s;
+  animation-direction: alternate-reverse;
+  background: radial-gradient(circle at 30% 70%, rgba(59, 130, 246, 0.12) 0%, transparent 60%),
+              radial-gradient(circle at 70% 30%, rgba(16, 185, 129, 0.08) 0%, transparent 50%);
+}
+
+@keyframes auroraMove {
+  0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+  50% { transform: translate(-5%, 5%) scale(1.05) rotate(5deg); }
+  100% { transform: translate(5%, -5%) scale(1) rotate(-5deg); }
+}
+
+.glass-card {
+  background: rgba(17, 24, 39, 0.5); /* Deep dark blue */
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-navbar {
+  background: rgba(17, 24, 39, 0.7);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-deep);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+button, 
+[role="button"],
+select {
+  cursor: pointer;
+}
+
