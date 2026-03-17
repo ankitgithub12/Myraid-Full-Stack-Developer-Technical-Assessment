@@ -109,6 +109,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
         message: `Password reset email sent to ${user.email}. Check your inbox (and spam folder).`,
       });
     } catch (emailError) {
+      console.error('[Forgot Password] Email sending failed:', emailError);
       // If email fails, clear the token so it can be retried
       user.resetPasswordToken = undefined;
       user.resetPasswordExpire = undefined;

@@ -1,27 +1,24 @@
-const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 
 /**
- * Sends a password reset email using Gmail SMTP.
+ * Sends a password reset email using SendGrid API.
+ * This replaces the previous Nodemailer SMTP implementation to avoid
+ * ENETUNREACH errors on cloud platforms like Render.
  *
  * @param {string} toEmail  - Recipient's email address
  * @param {string} token    - The plain-text reset token
  */
 const sendResetEmail = async (toEmail, token) => {
+  // 1. Configure SendGrid with API Key
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
   const resetUrl = `${frontendUrl}/resetpassword/${token}`;
 
-  // Create a transporter using Gmail SMTP
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS, // Use a Gmail App Password, NOT your account password
-    },
-  });
-
-  const mailOptions = {
-    from: `"TaskFlow App" <${process.env.EMAIL_USER}>`,
+  // 2. Define Email Content
+  const msg = {
     to: toEmail,
+    from: process.env.EMAIL_FROM, // Must be a verified sender in SendGrid
     subject: 'TaskFlow — Password Reset Request',
     html: `
       <!DOCTYPE html>
@@ -62,7 +59,7 @@ const sendResetEmail = async (toEmail, token) => {
                           <td align="center" style="padding:8px 0 32px;">
                             <a href="${resetUrl}"
                                style="display:inline-block;padding:14px 36px;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;font-size:15px;font-weight:700;text-decoration:none;border-radius:12px;letter-spacing:0.4px;">
-                              Reset My Password
+                               Reset My Password
                             </a>
                           </td>
                         </tr>
@@ -95,7 +92,23 @@ const sendResetEmail = async (toEmail, token) => {
     `,
   };
 
-  await transporter.sendMail(mailOptions);
+  // 3. Send Email with Fallback Logging
+  try {
+    await sgMail.send(msg);
+    console.log(`[Email] Reset link sent successfully to: ${toEmail}`);
+  } catch (error) {
+    console.error('[Email Error] SendGrid failed to send email:', error.message);
+    
+    if (error.response) {
+      console.error('[Email Error Details]', error.response.body);
+    }
+
+    // Critical Fallback: Log the URL so it can be retrieved from logs if email fails
+    console.warn(`[CRITICAL FALLBACK] Password Reset URL for ${toEmail}: ${resetUrl}`);
+    
+    // Optional: throw error to be handled by the controller
+    throw new Error('Failed to send password reset email. Please check server logs.');
+  }
 };
 
 module.exports = sendResetEmail;

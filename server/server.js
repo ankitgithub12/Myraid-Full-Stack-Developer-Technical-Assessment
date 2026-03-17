@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const dotenv = require('dotenv');
 
 dotenv.config(); // Must be called before any routes or models that rely on process.env
@@ -20,28 +21,83 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(cookieParser());
 
-// CORS Configuration
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true,
-}));
+// ─── Production-Ready CORS ────────────────────────────────────────────────────
+// Supports both localhost (dev) and the deployed Render frontend simultaneously.
+// Trailing slashes on origin values are stripped to avoid subtle mismatches.
+const allowedOrigins = [
+  'http://localhost:5173', // Vite default dev port
+  'http://localhost:3000', // CRA / alternate dev port
+  process.env.FRONTEND_URL, // Set this in Render's env dashboard
+].filter(Boolean).map((o) => o.replace(/\/$/, '')); // strip trailing slashes
 
-// Routes
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin header (Postman, curl, server-to-server)
+      if (!origin) return callback(null, true);
+      const cleanOrigin = origin.replace(/\/$/, '');
+      if (allowedOrigins.includes(cleanOrigin)) {
+        callback(null, true);
+      } else {
+        console.warn(`[CORS] Blocked request from origin: ${origin}`);
+        callback(new Error(`CORS policy: Origin '${origin}' is not allowed.`));
+      }
+    },
+    credentials: true, // Required for httpOnly cookie auth
+  })
+);
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── Routes ──────────────────────────────────────────────────────────────────
+// Health Check Router — handles /api and /api/
+const healthRouter = express.Router();
+healthRouter.get('/', (req, res) => {
+  res.json({ 
+    success: true, 
+    message: 'API is running ✅', 
+    env: process.env.NODE_ENV,
+    timestamp: new Date().toISOString()
+  });
+});
+app.use('/api', healthRouter);
+
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/users', userRoutes);
 
-app.get('/', (req, res) => {
-  res.send('API is running...');
-});
+// ─── Static Files & SPA Routing (Production) ──────────────────────────────────
+if (process.env.NODE_ENV === 'production') {
+  const buildPath = path.join(__dirname, '../client/dist');
+  
+  // Serve static files (js, css, images) from the build folder
+  app.use(express.static(buildPath));
 
-// Middleware
+  // Catch-all route: serve index.html for any request that doesn't match an API route
+  // This allows React Router to handle the navigation on the client side.
+  app.get('*', (req, res) => {
+    res.sendFile(path.resolve(buildPath, 'index.html'));
+  });
+} else {
+  app.get('/', (req, res) => {
+    res.send('Task Manager API is running in development mode...');
+  });
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── Error Middleware ─────────────────────────────────────────────────────────
 app.use(notFound);
 app.use(errorHandler);
+// ─────────────────────────────────────────────────────────────────────────────
 
-// Database Connection and Server Start
-connectDB().then(() => {
-  app.listen(port, () => console.log(`Server started on port ${port}`));
-}).catch(err => {
-  console.log('Failed to connect to the database. Server not started.', err.message);
-});
+// ─── Database Connection & Server Start ──────────────────────────────────────
+connectDB()
+  .then(() => {
+    app.listen(port, () =>
+      console.log(`[Server] Running on port ${port} in ${process.env.NODE_ENV || 'development'} mode`)
+    );
+  })
+  .catch((err) => {
+    console.error('[Server] Failed to connect to the database. Server not started.', err.message);
+    process.exit(1);
+  });
+// ─────────────────────────────────────────────────────────────────────────────

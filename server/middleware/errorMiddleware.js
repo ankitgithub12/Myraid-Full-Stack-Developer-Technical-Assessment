@@ -8,9 +8,10 @@ const errorHandler = (err, req, res, next) => {
   let statusCode = res.statusCode === 200 ? 500 : res.statusCode;
   let message = err.message;
 
-  // Log error for debugging
+  // Log error for debugging (visible in Render logs)
+  console.error(`[Error] ${req.method} ${req.originalUrl} - ${err.message}`);
   if (process.env.NODE_ENV !== 'production') {
-    console.error(`[Error] ${err.stack}`);
+    console.error(err.stack);
   }
 
   // Check for Mongoose bad ObjectId
