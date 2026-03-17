@@ -72,15 +72,24 @@ if (process.env.NODE_ENV === 'production') {
   // Serve static files (js, css, images) from the build folder
   app.use(express.static(buildPath));
 
-  // Catch-all route: serve index.html for any request that doesn't match an API route
-  // This allows React Router to handle the navigation on the client side.
-  // Using '*' for Express 5 compatibility
-  app.get('*', (req, res) => {
-    // Skip API routes
+  // Option 1: Use a middleware function instead of a route pattern
+  // This will catch all requests that aren't handled by previous routes
+  app.use((req, res, next) => {
+    // Skip API routes - they should have been handled already
     if (req.path.startsWith('/api/')) {
-      return res.status(404).json({ success: false, message: 'API endpoint not found' });
+      return next(); // This will eventually hit the 404 handler
     }
-    res.sendFile(path.resolve(buildPath, 'index.html'));
+    
+    // Check if the request accepts HTML (browser navigation)
+    const acceptsHtml = req.accepts('html');
+    
+    if (acceptsHtml) {
+      // Serve the React app for browser navigation
+      res.sendFile(path.resolve(buildPath, 'index.html'));
+    } else {
+      // For API-like requests that weren't caught, pass to 404 handler
+      next();
+    }
   });
 } else {
   app.get('/', (req, res) => {
