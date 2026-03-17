@@ -74,8 +74,12 @@ if (process.env.NODE_ENV === 'production') {
 
   // Catch-all route: serve index.html for any request that doesn't match an API route
   // This allows React Router to handle the navigation on the client side.
-  // Using '(.*)' instead of '*' to maintain compatibility with Express 5.
-  app.get('(.*)', (req, res) => {
+  // Using '*' for Express 5 compatibility
+  app.get('*', (req, res) => {
+    // Skip API routes
+    if (req.path.startsWith('/api/')) {
+      return res.status(404).json({ success: false, message: 'API endpoint not found' });
+    }
     res.sendFile(path.resolve(buildPath, 'index.html'));
   });
 } else {
